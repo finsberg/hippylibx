@@ -27,7 +27,7 @@ jobs:
 
       - name: Install package
         run: |
-          python3 -m pip install .[test]
+          python3 -m pip install .[test,demo]
 
       - name: multivector testing
         run: |
