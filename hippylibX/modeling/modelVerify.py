@@ -41,6 +41,7 @@ def modelVerify(
     x = model.generate_vector()
 
     x[PARAMETER] = m0
+    # breakpoint()
     model.solveFwd(x[STATE], x)
     model.solveAdj(x[ADJOINT], x)
     cx = model.cost(x)

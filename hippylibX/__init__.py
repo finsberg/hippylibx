@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: GPL-2.0-only
 # --------------------------------------------------------------------------ec-
 
+from . import algorithms, compat, modeling, utils
 from .algorithms import *  # noqa
 from .modeling import *  # noqa
 from .utils import *  # noqa

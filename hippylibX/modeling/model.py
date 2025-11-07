@@ -8,7 +8,7 @@
 # --------------------------------------------------------------------------ec-
 
 import math
-from typing import Any
+from typing import Any, Protocol
 
 import dolfinx as dlx
 
@@ -19,6 +19,46 @@ from .variables import ADJOINT, PARAMETER, STATE
 # version of X
 def unused_function(func):
     return None
+
+
+class Problem(Protocol):
+    def generate_state(self) -> dlx.la.Vector: ...
+
+    def generate_parameter(self) -> dlx.la.Vector: ...
+
+    def solveFwd(self, out: dlx.la.Vector, x: list) -> None: ...
+
+    def solveAdj(self, out: dlx.la.Vector, x: list, rhs: dlx.la.Vector) -> None: ...
+
+    def evalGradientParameter(self, x: list, mg: dlx.la.Vector) -> None: ...
+
+    def setLinearizationPoint(self, x: list, gauss_newton_approx: bool) -> None: ...
+
+    def solveIncremental(self, sol: dlx.la.Vector, rhs: dlx.la.Vector, adjoint: bool) -> None: ...
+
+    def apply_ij(self, i: int, j: int, dir: dlx.la.Vector, out: dlx.la.Vector) -> None: ...
+
+
+class Prior(Protocol):
+    def R(self) -> Any: ...
+
+    def Rsolver(self) -> Any: ...
+
+    def cost(self, m: dlx.la.Vector) -> float: ...
+
+    def grad(self, m: dlx.la.Vector, out: dlx.la.Vector) -> None: ...
+
+    def setLinearizationPoint(self, m: dlx.la.Vector, gauss_newton_approx: bool) -> None: ...
+
+
+class Misfit(Protocol):
+    def cost(self, x: list) -> float: ...
+
+    def grad(self, i: int, x: list, out: dlx.la.Vector) -> None: ...
+
+    def setLinearizationPoint(self, x: list, gauss_newton_approx: bool) -> None: ...
+
+    def apply_ij(self, i: int, j: int, dir: dlx.la.Vector, out: dlx.la.Vector) -> None: ...
 
 
 class Model:
@@ -33,7 +73,7 @@ class Model:
         - :code:`p` the adjoint variable
     """
 
-    def __init__(self, problem, prior, misfit):
+    def __init__(self, problem: Problem, prior: Prior, misfit: Misfit):
         """
         Create a model given:
             - problem: the description of the forward/adjoint problem and all the sensitivities

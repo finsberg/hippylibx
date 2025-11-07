@@ -6,10 +6,9 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 # --------------------------------------------------------------------------ec-
-
-import os
 import sys
 import unittest
+from pathlib import Path
 
 import petsc4py
 
@@ -17,7 +16,8 @@ import numpy as np
 
 import hippylibX as hpx
 
-sys.path.append(os.path.abspath("../example"))
+here = Path(__file__).parent
+sys.path.append(str(here / ".." / "example"))
 
 import poisson_dirichlet_example
 

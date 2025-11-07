@@ -13,6 +13,7 @@ from mpi4py import MPI
 
 import basix.ufl
 import dolfinx as dlx
+import dolfinx.fem.petsc
 import numpy as np
 import ufl
 
@@ -142,6 +143,7 @@ class SqrtPrecisionPDE_Prior:
             dlx.fem.form(sqrt_precision_varf_handler(trial, test)),
         )
         self.A.assemble()
+
         self.Asolver = self._createsolver(self.petsc_options_A)
 
         if self.petsc_options_A["pc_type"] == "hypre":
@@ -220,11 +222,10 @@ class SqrtPrecisionPDE_Prior:
 
         If :code:`add_mean == True` add the prior mean value to :code:`s`.
         """
-
         rhs = self.sqrtM.createVecLeft()
 
         self.sqrtM.mult(noise.petsc_vec, rhs)
-
+        # breakpoint()
         self.Asolver.solve(rhs, s.petsc_vec)
 
         if add_mean:
@@ -309,18 +310,16 @@ def BiLaplacianPrior(
         trial: ufl.TrialFunction,
         test: ufl.TestFunction,
     ) -> ufl.form.Form:
+        dx = ufl.Measure("dx", metadata={"quadrature_degree": 4})
+        ds = ufl.ds(metadata={"quadrature_degree": 4})
         if Theta is None:
-            varfL = ufl.inner(ufl.grad(trial), ufl.grad(test)) * ufl.dx(
-                metadata={"quadrature_degree": 4},
-            )
+            varfL = ufl.inner(ufl.grad(trial), ufl.grad(test)) * dx
         else:
-            varfL = ufl.inner(Theta * ufl.grad(trial), ufl.grad(test)) * ufl.dx(
-                metadata={"quadrature_degree": 4},
-            )
+            varfL = ufl.inner(Theta * ufl.grad(trial), ufl.grad(test)) * dx
 
-        varfM = ufl.inner(trial, test) * ufl.dx
+        varfM = ufl.inner(trial, test) * dx
 
-        varf_robin = ufl.inner(trial, test) * ufl.ds
+        varf_robin = ufl.inner(trial, test) * ds
 
         if robin_bc:
             robin_coeff = gamma * ufl.sqrt(delta / gamma) / 1.42

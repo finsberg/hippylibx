@@ -7,6 +7,9 @@
 # SPDX-License-Identifier: GPL-2.0-only
 # --------------------------------------------------------------------------ec-
 
+import abc
+import typing
+
 import petsc4py
 from mpi4py import MPI
 
@@ -16,7 +19,7 @@ import ufl
 import hippylibX as hpx
 
 
-class NonGaussianContinuousMisfit(object):
+class Misfit(abc.ABC):
     """
     Abstract class to model the misfit component of the cost functional.
     In the following :code:`x` will denote the variable :code:`[u, m, p]`, denoting respectively
@@ -26,10 +29,68 @@ class NonGaussianContinuousMisfit(object):
     parameter :code:`m`. The adjoint variables will never be accessed.
     """
 
-    def __init__(self, Vh: list, form, bc0=[]):
+    @abc.abstractmethod
+    def cost(self, x):
+        """
+        Given x evaluate the cost functional.
+        Only the state u and (possibly) the parameter m are accessed."""
+
+    @abc.abstractmethod
+    def grad(self, i, x, out):
+        """
+        Given the state and the paramter in :code:`x`, compute the partial gradient of the misfit
+        functional in with respect to the state (:code:`i == STATE`) or with respect to the parameter (:code:`i == PARAMETER`).
+        """
+
+    @abc.abstractmethod
+    def setLinearizationPoint(self, x, gauss_newton_approx=False):
+        """
+        Set the point for linearization.
+
+        Inputs:
+
+            :code:`x=[u, m, p]` - linearization point
+
+            :code:`gauss_newton_approx (bool)` - whether to use Gauss Newton approximation
+        """
+
+    @abc.abstractmethod
+    def apply_ij(self, i, j, dir, out):
+        """
+        Apply the second variation :math:`\delta_{ij}` (:code:`i,j = STATE,PARAMETER`) of the cost in direction :code:`dir`.
+        """
+
+
+class NonGaussianContinuousMisfit(Misfit):
+    """
+    Abstract class to model the misfit component of the cost functional.
+    In the following :code:`x` will denote the variable :code:`[u, m, p]`, denoting respectively
+    the state :code:`u`, the parameter :code:`m`, and the adjoint variable :code:`p`.
+
+    The methods in the class misfit will usually access the state u and possibly the
+    parameter :code:`m`. The adjoint variables will never be accessed.
+    """
+
+    def __init__(
+        self,
+        Vh: list,
+        form: typing.Callable[[dlx.fem.Function, dlx.fem.Function], ufl.form.Form],
+        bc0: list[dlx.fem.DirichletBC] | None = None,
+    ):
+        """_summary_
+
+        Parameters
+        ----------
+        Vh : list
+            The space (STATE, PARAMETER, ADJOINT)
+        form : typing.Callable[[dlx.fem.Function, dlx.fem.Function], ufl.form.Form]
+            The misfit form depending on state and parameter
+        bc0 : list[dlx.fem.DirichletBC] | None, optional
+            The Dirichlet boundary conditions for the parameter, by default None
+        """
         self.Vh = Vh
         self.form = form
-        self.bc0 = bc0
+        self.bc0 = bc0 or []
 
         self.x_lin_fun = None
         self.x_test = [
@@ -40,7 +101,7 @@ class NonGaussianContinuousMisfit(object):
 
         self.xfun = [dlx.fem.Function(Vhi) for Vhi in Vh]
 
-    def cost(self, x: list) -> float:
+    def cost(self, x: list[dlx.fem.Function]) -> float:
         """
         Given x evaluate the cost functional.
         Only the state u and (possibly) the parameter m are accessed.

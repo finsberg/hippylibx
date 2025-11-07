@@ -7,7 +7,10 @@
 # SPDX-License-Identifier: GPL-2.0-only
 # --------------------------------------------------------------------------ec-
 
-from .vector2function import vector2Function, updateFromVector  # noqa
-from .random import parRandom  # noqa
-from .projection import projection  # noqa
+from . import nb
 from .master_print import master_print  # noqa
+from .projection import projection  # noqa
+from .random import parRandom  # noqa
+from .vector2function import updateFromVector, vector2Function  # noqa
+
+__all__ = ["nb", "vector2Function", "updateFromVector", "parRandom", "projection", "master_print"]

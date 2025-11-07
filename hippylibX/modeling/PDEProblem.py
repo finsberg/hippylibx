@@ -272,8 +272,8 @@ class PDEVariationalProblem:
         dlx.fem.petsc.assemble_matrix(
             self.C,
             dlx.fem.form(ufl.derivative(g_form[ADJOINT], x_fun[PARAMETER], x_fun_trial[PARAMETER])),
-            bcs=self.bc0,
-            diagonal=0.0,
+            self.bc0,
+            0.0,
         )
         self.C.assemble()
 
@@ -308,11 +308,12 @@ class PDEVariationalProblem:
                 )
 
             self.Wuu.zeroEntries()
+
             dlx.fem.petsc.assemble_matrix(
                 self.Wuu,
                 dlx.fem.form(ufl.derivative(g_form[STATE], x_fun[STATE], x_fun_trial[STATE])),
                 self.bc0,
-                diagonal=0.0,
+                0.0,
             )
             self.Wuu.assemble()
 
