@@ -56,7 +56,7 @@ class Misfit(abc.ABC):
 
     @abc.abstractmethod
     def apply_ij(self, i, j, dir, out):
-        """
+        r"""
         Apply the second variation :math:`\delta_{ij}` (:code:`i,j = STATE,PARAMETER`) of the cost in direction :code:`dir`.
         """
 
@@ -73,7 +73,7 @@ class NonGaussianContinuousMisfit(Misfit):
 
     def __init__(
         self,
-        Vh: list,
+        Vh: list[dlx.fem.FunctionSpace],
         form: typing.Callable[[dlx.fem.Function, dlx.fem.Function], ufl.form.Form],
         bc0: list[dlx.fem.DirichletBC] | None = None,
     ):

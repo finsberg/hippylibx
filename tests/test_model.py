@@ -11,6 +11,8 @@ import sys
 import unittest
 from pathlib import Path
 
+from mpi4py import MPI
+
 import numpy as np
 
 import hippylibX as hpx
@@ -87,14 +89,21 @@ def check_output(self, out: dict):
 
 
 class Testing_Execution(unittest.TestCase):
+    def setUp(self) -> None:
+        self.mesh_filename = Path("../example/meshes/circle.xdmf")
+        self.comm = MPI.COMM_WORLD
+        if not self.mesh_filename.is_file():
+            import create_circle_mesh
+
+            create_circle_mesh.main(self.comm, self.mesh_filename)
+
     def test_qpact_bilap_prior_execution(self):
         hpx.parRandom.replay()
-        nx = 64
-        ny = 64
+
         noise_variance = 1e-6
         prior_param = {"gamma": 0.1, "delta": 2.0}
-        mesh_filename = "../example/meshes/circle.xdmf"
-        out = sfsi_toy_gaussian.run_inversion(mesh_filename, nx, ny, noise_variance, prior_param)
+
+        out = sfsi_toy_gaussian.run_inversion(self.mesh_filename, noise_variance, prior_param)
         check_output(self, out)
 
     def test_poisson_robin_bilap_prior_execution(self):
@@ -117,16 +126,12 @@ class Testing_Execution(unittest.TestCase):
 
     def test_qpact_var_reg_prior_execution(self):
         hpx.parRandom.replay()
-        nx = 64
-        ny = 64
+
         noise_variance = 1e-6
         prior_param = {"gamma": 0.1, "delta": 2.0}
-        mesh_filename = "../example/meshes/circle.xdmf"
 
         out = sfsi_toy_gaussian_reg.run_inversion(
-            mesh_filename,
-            nx,
-            ny,
+            self.mesh_filename,
             noise_variance,
             prior_param,
         )

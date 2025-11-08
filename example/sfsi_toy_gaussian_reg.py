@@ -9,6 +9,7 @@
 
 # qpact problem with Variational Regularization Prior.
 
+from pathlib import Path
 from typing import Dict
 
 from mpi4py import MPI
@@ -63,9 +64,7 @@ class PACTMisfitForm:
 
 
 def run_inversion(
-    mesh_filename: str,
-    nx: int,
-    ny: int,
+    mesh_filename: Path,
     noise_variance: float,
     prior_param: Dict[str, float],
 ) -> Dict[str, Dict[str, float]]:
@@ -247,17 +246,21 @@ def run_inversion(
 
 
 if __name__ == "__main__":
-    nx = 64
-    ny = 64
+    comm = MPI.COMM_WORLD
     noise_variance = 1e-6
     prior_param = {"gamma": 0.15, "delta": 3.0}
-    mesh_filename = "./meshes/circle.xdmf"
-    final_results = run_inversion(mesh_filename, nx, ny, noise_variance, prior_param)
+    mesh_filename = Path("./meshes/circle.xdmf")
+    if not mesh_filename.is_file():
+        import create_circle_mesh
+
+        comm.Barrier()
+
+        create_circle_mesh.main(comm, mesh_filename)
+    final_results = run_inversion(mesh_filename, noise_variance, prior_param)
     k, d = (
         final_results["eigen_decomposition_results"]["k"],
         final_results["eigen_decomposition_results"]["d"],
     )
-    comm = MPI.COMM_WORLD
     if comm.rank == 0:
         plt.savefig("qpact_result_FD_Gradient_Hessian_Check")
         plt.figure()
