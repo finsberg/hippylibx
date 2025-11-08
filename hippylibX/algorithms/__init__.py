@@ -7,8 +7,20 @@
 # SPDX-License-Identifier: GPL-2.0-only
 # --------------------------------------------------------------------------ec-
 
-from .linalg import inner  # noqa
-from .NewtonCG import ReducedSpaceNewtonCG, ReducedSpaceNewtonCG_ParameterList  # noqa
-from .multivector import MultiVector, MatMvMult, MatMvTranspmult, MvDSmatMult  # noqa
-from .randomizedEigensolver import doublePassG  # noqa
-from .lowRankOperator import LowRankOperator  # noqa
+from .linalg import inner
+from .lowRankOperator import LowRankOperator
+from .multivector import MatMvMult, MatMvTranspmult, MultiVector, MvDSmatMult
+from .NewtonCG import ReducedSpaceNewtonCG, ReducedSpaceNewtonCG_ParameterList
+from .randomizedEigensolver import doublePassG
+
+__all__ = [
+    "inner",
+    "ReducedSpaceNewtonCG",
+    "ReducedSpaceNewtonCG_ParameterList",
+    "MultiVector",
+    "MatMvMult",
+    "MatMvTranspmult",
+    "MvDSmatMult",
+    "doublePassG",
+    "LowRankOperator",
+]
