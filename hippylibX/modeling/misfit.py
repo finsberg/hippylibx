@@ -92,7 +92,6 @@ class NonGaussianContinuousMisfit(Misfit):
         self.form = form
         self.bc0 = bc0 or []
 
-        self.x_lin_fun = None
         self.x_test = [
             ufl.TestFunction(Vh[hpx.STATE]),
             ufl.TestFunction(Vh[hpx.PARAMETER]),

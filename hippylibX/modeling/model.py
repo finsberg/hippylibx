@@ -7,8 +7,11 @@
 # SPDX-License-Identifier: GPL-2.0-only
 # --------------------------------------------------------------------------ec-
 
+
 import math
 from typing import Any, Protocol
+
+import petsc4py
 
 import dolfinx as dlx
 
@@ -40,9 +43,14 @@ class Problem(Protocol):
 
 
 class Prior(Protocol):
-    def R(self) -> Any: ...
+    @property
+    def R(self) -> petsc4py.PETSc.Mat: ...
 
+    @property
     def Rsolver(self) -> Any: ...
+
+    @property
+    def Msolver(self) -> petsc4py.PETSc.KSP: ...
 
     def cost(self, m: dlx.la.Vector) -> float: ...
 

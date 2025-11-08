@@ -13,7 +13,9 @@ from mpi4py import MPI
 import dolfinx as dlx
 import ufl
 
-import hippylibX as hpx
+# import hippylibX as hpx
+from ..utils import updateFromVector
+from .types import UnsetMatrix
 
 
 # functional handler for prior:
@@ -66,8 +68,7 @@ class VariationalRegularization:
             "ksp_initial_guess_nonzero": "false",
         }
 
-        self.R = None
-        self.Rsolver = None
+        self.R = UnsetMatrix()
 
         if self.isQuadratic:
             tmp = dlx.fem.Function(Vh).x
@@ -82,10 +83,9 @@ class VariationalRegularization:
         self.Msolver.setOperators(self.M)
 
     def __del__(self):
-        if self.Rsolver is not None:
+        if hasattr(self, "Rsolver"):
             self.Rsolver.destroy()
-        if self.R is not None:
-            self.R.destroy()
+        self.R.destroy()
         self.Msolver.destroy()
         self.M.destroy()
 
@@ -110,13 +110,13 @@ class VariationalRegularization:
         return ksp
 
     def cost(self, m: dlx.la.Vector) -> float:
-        hpx.updateFromVector(self.mfun, m)
+        updateFromVector(self.mfun, m)
         cost_functional = self.functional_handler(self.mfun)
         local_cost = dlx.fem.assemble_scalar(dlx.fem.form(cost_functional))
         return self.Vh.mesh.comm.allreduce(local_cost, op=MPI.SUM)
 
     def grad(self, m: dlx.la.Vector, out: dlx.la.Vector) -> dlx.la.Vector:
-        hpx.updateFromVector(self.mfun, m)
+        updateFromVector(self.mfun, m)
         out.array[:] = 0.0
 
         dlx.fem.petsc.assemble_vector(
@@ -130,9 +130,9 @@ class VariationalRegularization:
         )
 
     def setLinearizationPoint(self, m: dlx.la.Vector, gauss_newton_approx=False) -> None:
-        if self.isQuadratic and (self.R is not None):
+        if self.isQuadratic and (isinstance(self.R, UnsetMatrix)):
             return
-        hpx.updateFromVector(self.mfun, m)
+        updateFromVector(self.mfun, m)
         L = ufl.derivative(
             ufl.derivative(self.functional_handler(self.mfun), self.mfun, self.mtest),
             self.mfun,

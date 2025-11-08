@@ -1,5 +1,7 @@
 from pathlib import Path
 
+from mpi4py import MPI
+
 import dolfinx
 
 try:
@@ -52,4 +54,5 @@ def main(comm, outfile=Path(__file__).parent / "meshes" / "circle.xdmf"):
 
 
 if __name__ == "__main__":
-    main()
+    comm = MPI.comm_world
+    main(comm=comm)

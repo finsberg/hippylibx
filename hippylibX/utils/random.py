@@ -91,6 +91,7 @@ class Random:
         if hasattr(out, "scale"):
             out.scale(0.0)
         else:
+            assert not isinstance(out, MultiVector)
             out.array[:] = 0.0
 
         self.normal_perturb(sigma, out)

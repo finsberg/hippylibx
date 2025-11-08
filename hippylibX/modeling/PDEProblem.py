@@ -13,6 +13,7 @@ import dolfinx as dlx
 import ufl
 
 from ..utils.vector2function import updateFromVector
+from .types import UnsetMatrix
 from .variables import ADJOINT, PARAMETER, STATE
 
 
@@ -36,18 +37,18 @@ class PDEVariationalProblem:
         self.bc = bc
         self.bc0 = bc0
 
-        self.Wuu = None
-        self.Wmu = None
-        self.Wum = None
-        self.Wmm = None
+        self.Wuu = UnsetMatrix()
+        self.Wmu = UnsetMatrix()
+        self.Wum = UnsetMatrix()
+        self.Wmm = UnsetMatrix()
 
-        self.A = None
-        self.At = None
-        self.C = None
+        self.A = UnsetMatrix()
+        self.At = UnsetMatrix()
+        self.C = UnsetMatrix()
 
-        self.solver = None
-        self.solver_fwd_inc = None
-        self.solver_adj_inc = None
+        # self.solver = None
+        # self.solver_fwd_inc = None
+        # self.solver_adj_inc = None
 
         self.is_fwd_linear = is_fwd_linear
         self.n_calls = {
@@ -63,31 +64,43 @@ class PDEVariationalProblem:
             "pc_factor_mat_solver_type": "mumps",
         }
 
+    @property
+    def solver(self) -> petsc4py.PETSc.KSP:
+        if not hasattr(self, "_solver"):
+            self._solver = self._createLUSolver()
+            self._solver.setTolerances(rtol=1e-9)
+        return self._solver
+
+    @property
+    def solver_fwd_inc(self) -> petsc4py.PETSc.KSP:
+        if not hasattr(self, "_solver_fwd_inc"):
+            self._solver_fwd_inc = self._createLUSolver()
+        return self._solver_fwd_inc
+
+    @property
+    def solver_adj_inc(self) -> petsc4py.PETSc.KSP:
+        if not hasattr(self, "_solver_adj_inc"):
+            self._solver_adj_inc = self._createLUSolver()
+        return self._solver_adj_inc
+
     def __del__(self):
         # self.solver.destroy()
         # self.solver_fwd_inc.destroy()
         # self.solver_adj_inc.destroy()
 
-        if self.Wuu is not None:
-            self.Wuu.destroy()
+        self.Wuu.destroy()
 
-        if self.Wmu is not None:
-            self.Wmu.destroy()
+        self.Wmu.destroy()
 
-        if self.Wum is not None:
-            self.Wum.destroy()
+        self.Wum.destroy()
 
-        if self.Wmm is not None:
-            self.Wmm.destroy()
+        self.Wmm.destroy()
 
-        if self.A is not None:
-            self.A.destroy()
+        self.A.destroy()
 
-        if self.At is not None:
-            self.At.destroy()
+        self.At.destroy()
 
-        if self.C is not None:
-            self.C.destroy()
+        self.C.destroy()
 
     def generate_state(self) -> dlx.la.Vector:
         """Return a vector in the shape of the state."""
@@ -110,9 +123,9 @@ class PDEVariationalProblem:
 
         self.n_calls["forward"] += 1
 
-        if self.solver is None:
-            self.solver = self._createLUSolver()
-            self.solver.setTolerances(rtol=1e-9)
+        # if self.solver is None:
+        #     self.solver = self._createLUSolver()
+        #     self.solver.setTolerances(rtol=1e-9)
 
         # def monitor(ksp,its,rnorm):
         #     print(ksp.view())
@@ -149,8 +162,8 @@ class PDEVariationalProblem:
         """
 
         self.n_calls["adjoint"] += 1
-        if self.solver is None:
-            self.solver = self._createLUSolver()
+        # if self.solver is None:
+        #     self.solver = self._createLUSolver()
 
         updateFromVector(self.xfun[STATE], x[STATE])
         u = self.xfun[STATE]
@@ -235,7 +248,7 @@ class PDEVariationalProblem:
         for i in range(3):
             g_form[i] = ufl.derivative(f_form, x_fun[i], x_fun_test[i])
 
-        if self.A is None:
+        if isinstance(self.A, UnsetMatrix):
             self.A = dlx.fem.petsc.create_matrix(
                 dlx.fem.form(ufl.derivative(g_form[ADJOINT], x_fun[STATE], x_fun_trial[STATE])),
             )
@@ -248,7 +261,7 @@ class PDEVariationalProblem:
         )
         self.A.assemble()
 
-        if self.At is None:
+        if isinstance(self.At, UnsetMatrix):
             self.At = dlx.fem.petsc.create_matrix(
                 dlx.fem.form(ufl.derivative(g_form[STATE], x_fun[ADJOINT], x_fun_trial[ADJOINT])),
             )
@@ -261,7 +274,7 @@ class PDEVariationalProblem:
         )
         self.At.assemble()
 
-        if self.C is None:
+        if isinstance(self.C, UnsetMatrix):
             self.C = dlx.fem.petsc.create_matrix(
                 dlx.fem.form(
                     ufl.derivative(g_form[ADJOINT], x_fun[PARAMETER], x_fun_trial[PARAMETER]),
@@ -277,32 +290,28 @@ class PDEVariationalProblem:
         )
         self.C.assemble()
 
-        if self.solver_fwd_inc is None:
-            self.solver_fwd_inc = self._createLUSolver()
-            self.solver_adj_inc = self._createLUSolver()
+        # if self.solver_fwd_inc is None:
+        #     self.solver_fwd_inc = self._createLUSolver()
+        #     self.solver_adj_inc = self._createLUSolver()
 
         self.solver_fwd_inc.setOperators(self.A)
         self.solver_adj_inc.setOperators(self.At)
 
         if gauss_newton_approx:
-            if self.Wuu is not None:
-                self.Wuu.destroy()
-            self.Wuu = None
+            self.Wuu.destroy()
+            self.Wuu = UnsetMatrix()
 
-            if self.Wmu is not None:
-                self.Wmu.destroy()
-            self.Wmu = None
+            self.Wmu.destroy()
+            self.Wmu = UnsetMatrix()
 
-            if self.Wum is not None:
-                self.Wum.destroy()
-            self.Wum = None
+            self.Wum.destroy()
+            self.Wum = UnsetMatrix()
 
-            if self.Wmm is not None:
-                self.Wmm.destroy()
-            self.Wmm = None
+            self.Wmm.destroy()
+            self.Wmm = UnsetMatrix()
 
         else:
-            if self.Wuu is None:
+            if isinstance(self.Wuu, UnsetMatrix):
                 self.Wuu = dlx.fem.petsc.create_matrix(
                     dlx.fem.form(ufl.derivative(g_form[STATE], x_fun[STATE], x_fun_trial[STATE])),
                 )
@@ -317,7 +326,7 @@ class PDEVariationalProblem:
             )
             self.Wuu.assemble()
 
-            if self.Wum is None:
+            if isinstance(self.Wum, UnsetMatrix):
                 self.Wum = dlx.fem.petsc.create_matrix(
                     dlx.fem.form(
                         ufl.derivative(g_form[STATE], x_fun[PARAMETER], x_fun_trial[PARAMETER]),
@@ -334,13 +343,12 @@ class PDEVariationalProblem:
             )
             self.Wum.assemble()
 
-            if self.Wmu is not None:
-                self.Wmu.destroy()
+            self.Wmu.destroy()
 
             self.Wmu = self.Wum.copy()
             self.Wmu.transpose()
 
-            if self.Wmm is None:
+            if isinstance(self.Wmm, UnsetMatrix):
                 self.Wmm = dlx.fem.petsc.create_matrix(
                     dlx.fem.form(
                         ufl.derivative(g_form[PARAMETER], x_fun[PARAMETER], x_fun_trial[PARAMETER]),

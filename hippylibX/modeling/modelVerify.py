@@ -25,7 +25,7 @@ def modelVerify(
     misfit_only=False,
     verbose=True,
     eps=None,
-) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+) -> dict[str, np.ndarray]:
     """
     Verify the reduced Gradient and the Hessian of a model.
     It will produce two loglog plots of the finite difference checks for the gradient and for the Hessian.

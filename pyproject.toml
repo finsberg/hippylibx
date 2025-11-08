@@ -110,6 +110,23 @@ section-order = [
 [tool.ruff.lint.isort.sections]
 "mpi" = ["mpi4py", "petsc4py"]
 
+[tool.mypy]
+check_untyped_defs = false
+# disallow_any_generics = true
+# disallow_incomplete_defs = true
+# disallow_untyped_defs = true
+# disallow_untyped_calls = true
+# disallow_untyped_decorators = true
+ignore_missing_imports = true
+# strict_equality = true
+# warn_unused_ignores = true
+# warn_redundant_casts = true
+#exclude docs
+exclude = [
+    "docs"
+]
+
+
 
 [tool.bumpversion]
 allow_dirty = false
