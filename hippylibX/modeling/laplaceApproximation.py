@@ -120,7 +120,7 @@ class LaplaceApproximator:
     where :math:`S = I - (I + D)^{-1/2}` and :math:`x \\sim \\mathcal{N}(0, R^{-1}).`
     """
 
-    def __init__(self, prior, d: np.array, U: MultiVector, mean=None):
+    def __init__(self, prior, d: np.array, U: MultiVector, mean: dlx.la.Vector | None = None):
         """
         Construct the Gaussian approximation of the posterior.
         Input:
@@ -136,8 +136,16 @@ class LaplaceApproximator:
         self.sampler = LowRankPosteriorSampler(self.prior, self.d, self.U)
         self.mean = mean
 
-        if self.mean is None:
-            self.mean = self.prior.generate_parameter(0)
+    @property
+    def mean(self) -> dlx.la.Vector:
+        return self._mean
+
+    @mean.setter
+    def mean(self, value: dlx.la.Vector | None) -> None:
+        if value is None:
+            self._mean = self.prior.generate_parameter(0)
+        else:
+            self._mean = value
 
     def cost(self, m: dlx.la.Vector) -> float:
         if self.mean is None:

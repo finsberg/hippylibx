@@ -94,7 +94,7 @@ class SqrtPrecisionPDE_Prior:
         self,
         Vh: dlx.fem.FunctionSpace,
         sqrt_precision_varf_handler,
-        mean=None,
+        mean: dlx.la.Vector | None = None,
     ):
         """
         Construct the prior model.
@@ -197,8 +197,16 @@ class SqrtPrecisionPDE_Prior:
         self.Rsolver = _BilaplacianRsolver(self.Asolver, self.M)
         self.mean = mean
 
-        if self.mean is None:
-            self.mean = self.generate_parameter(0)
+    @property
+    def mean(self) -> dlx.la.Vector:
+        return self._mean
+
+    @mean.setter
+    def mean(self, value: dlx.la.Vector | None) -> None:
+        if value is None:
+            self._mean = self.generate_parameter(0)
+        else:
+            self._mean = value
 
     @property
     def R(self) -> petsc4py.PETSc.Mat:
@@ -283,8 +291,8 @@ def BiLaplacianPrior(
     gamma: float,
     delta: float,
     Theta=None,
-    mean=None,
-    robin_bc=False,
+    mean: dlx.la.Vector | None = None,
+    robin_bc: bool = False,
 ) -> SqrtPrecisionPDE_Prior:
     """
     This function construct an instance of :code"`SqrtPrecisionPDE_Prior`  with covariance matrix
