@@ -33,3 +33,23 @@ class Solver2Operator:
 
     def mult(self, x: petsc4py.PETSc.Vec, y: petsc4py.PETSc.Vec) -> None:
         self.S.solve(x, y)
+
+
+class Operator2Solver:
+    def __init__(self, op, mpi_comm=MPI.COMM_WORLD) -> None:
+        self.op = op
+        # self.tmp = dl.Vector(mpi_comm)
+
+    # def init_vector(self, x, dim):
+    #     if hasattr(self.op, "init_vector"):
+    #         self.op.init_vector(x, dim)
+    #     else:
+    #         raise
+
+    def solve(self, y, x):
+        self.op.mult(x, y)
+
+    # def inner(self, x, y):
+    #     breakpoint()
+    #     self.op.mult(y, self.tmp)
+    #     return self.tmp.inner(x)

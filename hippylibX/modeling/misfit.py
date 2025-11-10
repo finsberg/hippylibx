@@ -176,3 +176,94 @@ class NonGaussianContinuousMisfit(Misfit):
         )
         if i == hpx.STATE:
             dlx.fem.petsc.set_bc(out.petsc_vec, self.bc0)
+
+
+class ContinuousStateObservation(Misfit):
+    """
+    This class implements continuous state observations in a
+    subdomain :math:`X \subset \Omega` or :math:`X \subset \partial \Omega`.
+    """
+
+    def __init__(self, Vh, dX, bcs=None, data=None, noise_variance=None, form=None):
+        """
+        Constructor:
+
+            :code:`Vh`: the finite element space for the state variable.
+
+            :code:`dX`: the integrator on subdomain `X` where observation are presents. \
+            E.g. :code:`dX = ufl.dx` means observation on all :math:`\Omega` and :code:`dX = ufl.ds` means observations on all :math:`\partial \Omega`.
+
+            :code:`bcs`: If the forward problem imposes Dirichlet boundary conditions :math:`u = u_D \mbox{ on } \Gamma_D`;  \
+            :code:`bcs` is a list of :code:`dolfin.DirichletBC` object that prescribes homogeneuos Dirichlet conditions :math:`u = 0 \mbox{ on } \Gamma_D`.
+
+            :code:`data` is the data
+
+            :code:`noise_variance` is the variance of the noise
+
+            :code:`form`: if :code:`form = None` we compute the :math:`L^2(X)` misfit: :math:`\int_X (u - u_d)^2 dX,` \
+            otherwise the integrand specified in the given form will be used.
+        """
+        if form is None:
+            u, v = dl.TrialFunction(Vh), dl.TestFunction(Vh)
+            self.W = dl.assemble(ufl.inner(u, v) * dX)
+        else:
+            self.W = dl.assemble(form)
+
+        if bcs is None:
+            bcs = []
+        if isinstance(bcs, dl.DirichletBC):
+            bcs = [bcs]
+
+        if len(bcs):
+            Wt = Transpose(self.W)
+            [bc.zero(Wt) for bc in bcs]
+            self.W = Transpose(Wt)
+            [bc.zero(self.W) for bc in bcs]
+
+        if data is None:
+            self.d = dl.Vector(self.W.mpi_comm())
+            self.W.init_vector(self.d, 1)
+        else:
+            self.d = data
+
+        self.noise_variance = noise_variance
+
+    def cost(self, x):
+        if self.noise_variance is None:
+            raise ValueError("Noise Variance must be specified")
+        elif self.noise_variance == 0:
+            raise ZeroDivisionError("Noise Variance must not be 0.0 Set to 1.0 for deterministic inverse problems")
+        r = self.d.copy()
+        r.axpy(-1.0, x[STATE])
+        Wr = dl.Vector(self.W.mpi_comm())
+        self.W.init_vector(Wr, 0)
+        self.W.mult(r, Wr)
+        return r.inner(Wr) / (2.0 * self.noise_variance)
+
+    def grad(self, i, x, out):
+        if self.noise_variance is None:
+            raise ValueError("Noise Variance must be specified")
+        elif self.noise_variance == 0:
+            raise ZeroDivisionError("Noise Variance must not be 0.0 Set to 1.0 for deterministic inverse problems")
+        if i == STATE:
+            self.W.mult(x[STATE] - self.d, out)
+            out *= 1.0 / self.noise_variance
+        elif i == PARAMETER:
+            out.zero()
+        else:
+            raise IndexError()
+
+    def setLinearizationPoint(self, x, gauss_newton_approx=False):
+        # The cost functional is already quadratic. Nothing to be done here
+        return
+
+    def apply_ij(self, i, j, dir, out):
+        if self.noise_variance is None:
+            raise ValueError("Noise Variance must be specified")
+        elif self.noise_variance == 0:
+            raise ZeroDivisionError("Noise Variance must not be 0.0 Set to 1.0 for deterministic inverse problems")
+        if i == STATE and j == STATE:
+            self.W.mult(dir, out)
+            out *= 1.0 / self.noise_variance
+        else:
+            out.zero()

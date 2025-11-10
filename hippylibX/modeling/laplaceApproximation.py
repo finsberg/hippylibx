@@ -211,7 +211,7 @@ class LaplaceApproximator:
     def _sample_given_prior(self, s_prior: dlx.la.Vector, s_post: dlx.la.Vector):
         self.sampler.mult(s_prior, s_post)
 
-    @not_implemented
+    # @not_implemented
     def trace(self, **kwargs):
         """
         Compute/estimate the trace of the posterior, prior distribution
@@ -224,11 +224,11 @@ class LaplaceApproximator:
         post_trace = pr_trace - corr_trace
         return post_trace, pr_trace, corr_trace
 
-    @not_implemented
+    # @not_implemented
     def trace_update(self):
         return self.Hlr.LowRankHinv.trace(self.prior.M)
 
-    @not_implemented
+    # @not_implemented
     def pointwise_variance(self, **kwargs):
         """
         Compute/estimate the pointwise variance of the posterior, prior distribution
@@ -238,10 +238,14 @@ class LaplaceApproximator:
         """
         pr_pointwise_variance = self.prior.pointwise_variance(**kwargs)
         # correction_pointwise_variance = Vector(self.prior.R.mpi_comm())
-        correction_pointwise_variance = None
-        self.init_vector(correction_pointwise_variance, 0)
-        self.Hlr.LowRankHinv.get_diagonal(correction_pointwise_variance)
-        post_pointwise_variance = pr_pointwise_variance - correction_pointwise_variance
+        # correction_pointwise_variance = None
+        # self.init_vector(correction_pointwise_variance, 0)
+        correction_pointwise_variance = self.prior.generate_parameter(0)
+        self.Hlr.LowRankHinv.get_diagonal(correction_pointwise_variance.petsc_vec)
+        post_pointwise_variance = self.prior.generate_parameter(0)
+
+        post_pointwise_variance.array[:] = pr_pointwise_variance.array - correction_pointwise_variance.array
+
         return (
             post_pointwise_variance,
             pr_pointwise_variance,
