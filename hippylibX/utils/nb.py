@@ -1,6 +1,7 @@
 """
 Plotting utilities for notebooks
 """
+
 # Copyright (c) 2016-2018, The University of Texas at Austin
 # & University of California--Merced.
 # Copyright (c) 2019-2020, The University of Texas at Austin
@@ -15,6 +16,7 @@ Plotting utilities for notebooks
 # hIPPYlib is free software; you can redistribute it and/or modify it under the
 # terms of the GNU General Public License (as published by the Free
 # Software Foundation) version 2.0 dated June 1991.
+import petsc4py.typing
 
 import dolfinx as dlx
 import matplotlib.colors as cls
@@ -343,14 +345,15 @@ def plot_eigenvectors(Vh, U, mytitle, which=[0, 1, 2, 5, 10, 15], cmap=None):
 
     title_stamp = mytitle + " {0}"
     u = dlx.fem.Function(Vh)
+    # breakpoint()
     counter = 1
     for i in which:
-        assert i < U.nvec()
+        assert i < U.nvec
         if (U[i])[0] >= 0:
-            s = 1.0 / U[i].norm("linf")
+            s = 1.0 / U[i].norm(petsc4py.typing.NormType.NORM_INFINITY)
         else:
-            s = -1.0 / U[i].norm("linf")
-        u.vector().zero()
-        u.vector().axpy(s, U[i])
+            s = -1.0 / U[i].norm(petsc4py.typing.NormType.NORM_INFINITY)
+        u.x.array[:] = 0.0
+        u.x.petsc_vec.axpy(s, U[i])
         plot(u, subplot_loc=(subplot_loc + counter), mytitle=title_stamp.format(i), vmin=-1, vmax=1, cmap=cmap)
         counter = counter + 1
