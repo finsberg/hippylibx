@@ -100,15 +100,19 @@ class NonGaussianContinuousMisfit(Misfit):
 
         self.xfun = [dlx.fem.Function(Vhi) for Vhi in Vh]
 
-    def cost(self, x: list[dlx.fem.Function]) -> float:
+    def cost(self, x: list[dlx.fem.Function | None]) -> float:
         """
         Given x evaluate the cost functional.
         Only the state u and (possibly) the parameter m are accessed.
         """
-        hpx.updateFromVector(self.xfun[hpx.STATE], x[hpx.STATE])
+        x_state = x[hpx.STATE]
+        if x_state is not None:
+            hpx.updateFromVector(self.xfun[hpx.STATE], x_state)
         u_fun = self.xfun[hpx.STATE]
 
-        hpx.updateFromVector(self.xfun[hpx.PARAMETER], x[hpx.PARAMETER])
+        x_param = x[hpx.PARAMETER]
+        if x_param is not None:
+            hpx.updateFromVector(self.xfun[hpx.PARAMETER], x_param)
         m_fun = self.xfun[hpx.PARAMETER]
 
         loc_cost = self.form(u_fun, m_fun)
