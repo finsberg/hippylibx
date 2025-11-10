@@ -46,10 +46,6 @@ class PDEVariationalProblem:
         self.At = UnsetMatrix()
         self.C = UnsetMatrix()
 
-        # self.solver = None
-        # self.solver_fwd_inc = None
-        # self.solver_adj_inc = None
-
         self.is_fwd_linear = is_fwd_linear
         self.n_calls = {
             "forward": 0,
@@ -229,7 +225,7 @@ class PDEVariationalProblem:
 
         return ksp
 
-    def setLinearizationPoint(self, x: list, gauss_newton_approx) -> None:
+    def setLinearizationPoint(self, x: list, gauss_newton_approx: bool) -> None:
         """Set the values of the state and parameter
         for the incremental forward and adjoint solvers."""
 
