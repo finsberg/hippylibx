@@ -25,7 +25,7 @@ demo = [
 
 [tool.pytest.ini_options]
 addopts = [
-   "--cov=hippylibx",
+   "--cov=hippylibX",
    "--cov-report=html",
    "--cov-report=xml",
    "--cov-report=term-missing",
