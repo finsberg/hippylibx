@@ -148,13 +148,25 @@ class LaplaceApproximator:
             self._mean = value
 
     def cost(self, m: dlx.la.Vector) -> float:
-        if self.mean is None:
-            dm = m
-        else:
-            dm = m - self.mean
+        # 1. Compute dm = m - self.mean
+        dm_petsc = m.petsc_vec.copy()
+        dm_petsc.axpy(-1.0, self.mean.petsc_vec)
 
-        self.Hlr.mult(dm.petsc_vec, self.Hlr.help1)
-        return 0.5 * self.Hlr.help1.dot(dm.petsc_vec)
+        # 2. Create a *new temporary vector* for the output.
+        #    Do NOT reuse self.Hlr.help1.
+        H_dm_petsc = self.Hlr.createVecRight()
+
+        # 3. Compute H_dm = H * dm
+        self.Hlr.mult(dm_petsc, H_dm_petsc)
+
+        # 4. Compute cost = 0.5 * <H_dm, dm>
+        return_value = 0.5 * H_dm_petsc.dot(dm_petsc)
+
+        # 5. Clean up all temporary vectors
+        dm_petsc.destroy()
+        H_dm_petsc.destroy()
+
+        return return_value
 
     def sample(self, *args, **kwargs):
         """
@@ -189,13 +201,15 @@ class LaplaceApproximator:
         if len(args) == 2:
             self._sample_given_prior(args[0], args[1])
             if add_mean:
-                args[1].array[:] += self.mean.array
-
+                # FIX: Use axpy for parallel-safe vector addition
+                args[1].petsc_vec.axpy(1.0, self.mean.petsc_vec)
         elif len(args) == 3:
             self._sample_given_white_noise(args[0], args[1], args[2])
             if add_mean:
-                args[1].array[:] += self.prior.mean.array
-                args[2].array[:] += self.mean.array
+                # FIX: Use axpy
+                args[1].petsc_vec.axpy(1.0, self.prior.mean.petsc_vec)
+                args[2].petsc_vec.axpy(1.0, self.mean.petsc_vec)
+
         else:
             raise NameError("Invalid number of parameters in Posterior::sample")
 
