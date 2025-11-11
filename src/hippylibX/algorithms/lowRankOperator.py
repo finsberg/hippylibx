@@ -30,17 +30,18 @@ class LowRankOperator:
         self.U = U
         self.createVecLeft = createVecLeft
         self.createVecRight = createVecRight
+        self.tmp = self.U[0].duplicate()
 
     def mult(self, x: petsc4py.PETSc.Vec, y: petsc4py.PETSc.Vec) -> None:
         """
         Compute :math:`y = Ax = U D U^T x`
         """
         Utx = self.U.dot(x)
-        dUtx = self.d * Utx  # elementwise mult
+        dUtx = self.d * Utx  # elementwise multiplication
         y.scale(0.0)
         self.U.reduce(y, dUtx)
 
-    def solve(self, rhs: petsc4py.PETSc.Vec, sol: petsc4py.PETSc.Vec) -> None:
+    def solve(self, sol: petsc4py.PETSc.Vec, rhs: petsc4py.PETSc.Vec) -> None:
         r"""
         Compute :math:`\mbox{sol} = U D^-1 U^T x`
         """
@@ -54,10 +55,13 @@ class LowRankOperator:
         Compute the diagonal of :code:`A`.
         """
         diag.scale(0.0)
-        tmp = self.U[0].duplicate()
+        self.tmp.scale(0.0)
+        with self.tmp.localForm() as v_array:
+            v_array[:] = self.U[0][:]
+
         for i in range(self.U.nvec):
-            tmp.pointwiseMult(self.U[i], self.U[i])
-            diag.axpy(self.d[i], tmp)
+            self.tmp.pointwiseMult(self.U[i], self.U[i])
+            diag.axpy(self.d[i], self.tmp)
 
     def trace(self, W=None) -> float:
         r"""
@@ -70,10 +74,10 @@ class LowRankOperator:
         .. note:: If :math:`U` is a :math:`W`-orthogonal matrix then :math:`\mbox{tr}_W(A) = \sum_i D(i,i)`.
         """
         if W is None:
-            tmp = self.U[0].duplicate()
-            tmp.scale(0.0)
-            self.U.reduce(tmp, np.sqrt(self.d))
-            tr = tmp.dot(tmp)
+            # tmp = self.U[0].duplicate()
+            self.tmp.scale(0.0)
+            self.U.reduce(self.tmp, np.sqrt(self.d))
+            tr = self.tmp.dot(self.tmp)
         else:
             WU = MultiVector.createFromVec(self.U[0], self.U.nvec)
             MatMvMult(W, self.U, WU)
