@@ -72,10 +72,13 @@ def setup_old_scipy(scipy_ground_truth):
 
     # Create mocks and operator
     U = MultiVector(template, U_np.shape[1])
+    # breakpoint()
     # U = MultiVector(V, U_np.shape[1])
     for i in range(U_np.shape[1]):
+        num_local_values = U[i].getLocalSize()
+        r = U[i].getOwnershipRange()
         with U[i].localForm() as v_array:
-            v_array[:] += U_np[:, i]
+            v_array[0:num_local_values] += U_np[r[0] : r[1], i]
 
         U[i].ghostUpdate(
             addv=petsc4py.PETSc.InsertMode.INSERT,  # type: ignore
@@ -91,7 +94,12 @@ def setup_old_scipy(scipy_ground_truth):
     # A.U[0].duplicate()
     # Create test vectors
     x_vec = template.copy()
-    x_vec.array[:] = X_NP
+
+    with x_vec.localForm() as x_array:
+        num_local_values = x_vec.getLocalSize()
+        r = x_vec.getOwnershipRange()
+        x_array[0:num_local_values] += X_NP[r[0] : r[1]]
+
     # x_vec.apply("insert")
     y_vec = template.copy()
     A.get_diagonal(y_vec)
@@ -103,24 +111,36 @@ def test_old_mult_scipy(setup_old_scipy):
     A, x_vec, y_vec, ground_truth = setup_old_scipy
     EXPECTED_MULT = ground_truth[2]
 
+    r = y_vec.getOwnershipRange()
+    # Slice the global expected array to get the local part
+    local_expected = EXPECTED_MULT[r[0] : r[1]]
+
     A.mult(x_vec, y_vec)
-    assert_allclose(y_vec.array, EXPECTED_MULT, rtol=1e-14)
+    assert_allclose(y_vec.array, local_expected, rtol=1e-14)
 
 
 def test_old_solve_scipy(setup_old_scipy):
     A, x_vec, y_vec, ground_truth = setup_old_scipy
     EXPECTED_SOLVE = ground_truth[3]
 
+    r = y_vec.getOwnershipRange()
+    # Slice the global expected array to get the local part
+    local_expected = EXPECTED_SOLVE[r[0] : r[1]]
+
     A.solve(y_vec, x_vec)  # y_vec is sol, x_vec is rhs
-    assert_allclose(y_vec.array, EXPECTED_SOLVE, rtol=14)
+    assert_allclose(y_vec.array, local_expected, rtol=14)
 
 
 def test_old_get_diagonal_scipy(setup_old_scipy):
     A, _, y_vec, ground_truth = setup_old_scipy
     EXPECTED_DIAG = ground_truth[4]
 
+    r = y_vec.getOwnershipRange()
+    # Slice the global expected array to get the local part
+    local_expected = EXPECTED_DIAG[r[0] : r[1]]
+
     A.get_diagonal(y_vec)
-    assert_allclose(y_vec.array, EXPECTED_DIAG, rtol=1e-14)
+    assert_allclose(y_vec.array, local_expected, rtol=1e-14)
 
 
 def test_old_trace_scipy(setup_old_scipy):

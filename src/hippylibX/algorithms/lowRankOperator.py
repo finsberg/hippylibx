@@ -56,11 +56,12 @@ class LowRankOperator:
         """
         diag.scale(0.0)
         self.tmp.scale(0.0)
-        with self.tmp.localForm() as v_array:
-            v_array[:] = self.U[0][:]
 
         for i in range(self.U.nvec):
+            # 1. tmp = U[i] .pointwiseMult. U[i]  (element-wise square)
             self.tmp.pointwiseMult(self.U[i], self.U[i])
+
+            # 2. diag = diag + d[i] * tmp
             diag.axpy(self.d[i], self.tmp)
 
     def trace(self, W=None) -> float:
