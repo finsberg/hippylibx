@@ -38,7 +38,7 @@ def test_cost():
     def misfit_form_func(u_fun, m_fun):
         return 0.5 * (u_fun**2 + m_fun**2) * dx
 
-    misfit = hpx.misfit.NonGaussianContinuousMisfit(Vh, misfit_form_func)
+    misfit = hpx.modeling.misfit.NonGaussianContinuousMisfit(Vh, misfit_form_func)
 
     # 1. Define functions u = 1.0, m = 2.0
     u = dlx.fem.Function(Vh_state)
