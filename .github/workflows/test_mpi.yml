@@ -1,4 +1,4 @@
-name: Test package
+name: Test package (MPI)
 
 on:
   pull_request:
@@ -17,7 +17,7 @@ jobs:
       fail-fast: false
       matrix:
         container: [
-          "ghcr.io/fenics/dolfinx/dolfinx:v0.9.0",
+          # "ghcr.io/fenics/dolfinx/dolfinx:v0.9.0",
           "ghcr.io/fenics/dolfinx/dolfinx:stable",
           "ghcr.io/fenics/dolfinx/dolfinx:nightly"
         ]
@@ -54,12 +54,32 @@ jobs:
           cd ./tests &&
           mpirun -n 2 python3 test_sampling.py
 
-      - name: run serial check
+      - name: test_laplaceApproximation
         run: |
           cd ./tests &&
-          mpirun -n 1 python3 test_model.py
+          mpirun -n 2 python3 test_laplaceApproximation.py
 
-      - name: run parallel check
+      - name: test_lowRankOperator
+        run: |
+          cd ./tests &&
+          mpirun -n 2 python3 test_lowRankOperator.py
+
+      - name: test_misfit
+        run: |
+          cd ./tests &&
+          mpirun -n 2 python3 test_misfit.py
+
+      - name: test_prior_mass_matrix
+        run: |
+          cd ./tests &&
+          mpirun -n 2 python3 test_prior_mass_matrix.py
+
+      - name: test_lowRankOperator
+        run: |
+          cd ./tests &&
+          mpirun -n 2 python3 test_lowRankOperator.py
+
+      - name: run models
         run: |
           cd ./tests &&
           mpirun -n 2 python3 test_model.py
