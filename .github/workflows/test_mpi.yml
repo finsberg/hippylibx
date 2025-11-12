@@ -1,4 +1,4 @@
-name: Test package
+name: Test package (MPI)
 
 on:
   pull_request:
@@ -29,6 +29,57 @@ jobs:
         run: |
           python3 -m pip install .[test,demo]
 
-      - name: Run tests
+      - name: multivector testing
         run: |
-          mpirun -n 2 python3 -m pytest -v tests/
+          cd ./tests &&
+          mpirun -n 2 python3 test_multivector.py
+
+      - name: eigendecomposition testing
+        run: |
+          cd ./tests &&
+          mpirun -n 2 python3 test_eigendecomposition.py
+
+      - name: low rank Hessian testing
+        run: |
+          cd ./tests &&
+          mpirun -n 2 python3 test_lowRankHessian.py
+
+      - name: low rank Hessian preconditioner testing
+        run: |
+          cd ./tests &&
+          mpirun -n 2 python3 test_lowRankHessian_preconditioner.py
+
+      - name: sample testing
+        run: |
+          cd ./tests &&
+          mpirun -n 2 python3 test_sampling.py
+
+      - name: test_laplaceApproximation
+        run: |
+          cd ./tests &&
+          mpirun -n 2 python3 test_laplaceApproximation.py
+
+      - name: test_lowRankOperator
+        run: |
+          cd ./tests &&
+          mpirun -n 2 python3 test_lowRankOperator.py
+
+      - name: test_misfit
+        run: |
+          cd ./tests &&
+          mpirun -n 2 python3 test_misfit.py
+
+      - name: test_prior_mass_matrix
+        run: |
+          cd ./tests &&
+          mpirun -n 2 python3 test_prior_mass_matrix.py
+
+      - name: test_lowRankOperator
+        run: |
+          cd ./tests &&
+          mpirun -n 2 python3 test_lowRankOperator.py
+
+      - name: run models
+        run: |
+          cd ./tests &&
+          mpirun -n 2 python3 test_model.py
