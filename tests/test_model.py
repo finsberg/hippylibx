@@ -90,8 +90,16 @@ def check_output(self, out: dict):
 
 class Testing_Execution(unittest.TestCase):
     def setUp(self) -> None:
-        self.mesh_filename = Path("../example/meshes/circle.xdmf")
         self.comm = MPI.COMM_WORLD
+        self.outdir = Path("results_execution_tests")
+        if self.outdir.is_dir() and self.comm.rank == 0:
+            import shutil
+
+            shutil.rmtree(self.outdir)
+            self.outdir.mkdir(exist_ok=True, parents=True)
+        self.comm.barrier()
+
+        self.mesh_filename = self.outdir / "meshes" / "circle.xdmf"
         if not self.mesh_filename.is_file():
             import create_circle_mesh
 
@@ -103,7 +111,7 @@ class Testing_Execution(unittest.TestCase):
         noise_variance = 1e-6
         prior_param = {"gamma": 0.1, "delta": 2.0}
 
-        out = sfsi_toy_gaussian.run_inversion(self.mesh_filename, noise_variance, prior_param)
+        out = sfsi_toy_gaussian.run_inversion(self.mesh_filename, noise_variance, prior_param, outdir=self.outdir)
         check_output(self, out)
 
     def test_poisson_robin_bilap_prior_execution(self):
@@ -112,7 +120,7 @@ class Testing_Execution(unittest.TestCase):
         ny = 64
         noise_variance = 1e-4
         prior_param = {"gamma": 0.1, "delta": 1.0}
-        out = poisson_example.run_inversion(nx, ny, noise_variance, prior_param)
+        out = poisson_example.run_inversion(nx, ny, noise_variance, prior_param, outdir=self.outdir)
         check_output(self, out)
 
     def test_poisson_dirichlet_bilap_prior_execution(self):
@@ -121,7 +129,7 @@ class Testing_Execution(unittest.TestCase):
         ny = 64
         noise_variance = 1e-4
         prior_param = {"gamma": 0.1, "delta": 1.0}
-        out = poisson_dirichlet_example.run_inversion(nx, ny, noise_variance, prior_param)
+        out = poisson_dirichlet_example.run_inversion(nx, ny, noise_variance, prior_param, outdir=self.outdir)
         check_output(self, out)
 
     def test_qpact_var_reg_prior_execution(self):
@@ -134,6 +142,7 @@ class Testing_Execution(unittest.TestCase):
             self.mesh_filename,
             noise_variance,
             prior_param,
+            outdir=self.outdir,
         )
         check_output(self, out)
 
@@ -143,7 +152,7 @@ class Testing_Execution(unittest.TestCase):
         ny = 64
         noise_variance = 1e-4
         prior_param = {"gamma": 0.1, "delta": 1.0}
-        out = poisson_example_reg.run_inversion(nx, ny, noise_variance, prior_param)
+        out = poisson_example_reg.run_inversion(nx, ny, noise_variance, prior_param, outdir=self.outdir)
         check_output(self, out)
 
     def test_poisson_dirichlet_var_reg_prior_execution(self):
@@ -152,7 +161,7 @@ class Testing_Execution(unittest.TestCase):
         ny = 64
         noise_variance = 1e-4
         prior_param = {"gamma": 0.1, "delta": 1.0}
-        out = poisson_dirichlet_example_reg.run_inversion(nx, ny, noise_variance, prior_param)
+        out = poisson_dirichlet_example_reg.run_inversion(nx, ny, noise_variance, prior_param, outdir=self.outdir)
         check_output(self, out)
 
 

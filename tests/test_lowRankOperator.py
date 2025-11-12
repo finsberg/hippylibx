@@ -57,18 +57,8 @@ def setup_old_scipy(scipy_ground_truth):
     # Create dolfin vector template
     mesh = dlx.mesh.create_unit_interval(MPI.COMM_WORLD, N_DOFS - 1)
     V = dlx.fem.functionspace(mesh, ("Lagrange", 1))
-    # template_fun = dlx.fem.Function(V)
-    # template = template_fun.x.petsc_vec
-    # breakpoint()
-    template = dolfinx.fem.petsc.create_vector(V)
-    # breakpoint()
-    # template = dlx.la.vector(
-    #     V.dofmap.index_map,
-    #     V.dofmap.index_map_bs,
-    # )
 
-    # def mock_init(x, dim):
-    # x.init(template.mpi_comm(), template.size())
+    template = dolfinx.fem.petsc.create_vector(V)
 
     # Create mocks and operator
     U = MultiVector(template, U_np.shape[1])
@@ -85,13 +75,8 @@ def setup_old_scipy(scipy_ground_truth):
             mode=petsc4py.PETSc.ScatterMode.FORWARD,  # type: ignore
         )
 
-        # U[i].array[:] = U_np[:, i]
-        # breakpoint()
         U[i].duplicate()
-        # U[i].apply("insert")
-
-    A = LowRankOperator(D_VAL, U)  # , my_init_vector=mock_init)
-    # A.U[0].duplicate()
+    A = LowRankOperator(D_VAL, U)
     # Create test vectors
     x_vec = template.copy()
 
@@ -100,10 +85,8 @@ def setup_old_scipy(scipy_ground_truth):
         r = x_vec.getOwnershipRange()
         x_array[0:num_local_values] += X_NP[r[0] : r[1]]
 
-    # x_vec.apply("insert")
     y_vec = template.copy()
     A.get_diagonal(y_vec)
-    # breakpoint()
     return A, x_vec, y_vec, scipy_ground_truth
 
 
