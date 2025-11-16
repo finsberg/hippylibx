@@ -44,6 +44,7 @@ def _mplot_function(f, vmin, vmax, logscale):
     mesh_dim = mesh.geometry.dim
     if mesh_dim != 2:
         raise AttributeError("Mesh must be 2D")
+
     # DG0 cellwise function
     if f.x.array.size == mesh.topology.index_map(mesh_dim).size_local:
         C = f.x.array.get_local()
@@ -62,7 +63,7 @@ def _mplot_function(f, vmin, vmax, logscale):
         else:
             return plt.tripcolor(_mesh2triang(mesh), C, shading="gouraud", vmin=vmin, vmax=vmax)
     # Vector function, interpolated to vertices
-    elif f.value_rank() == 1:
+    elif f.x.block_size == 2:
         V = dlx.fem.functionspace(mesh, ("Lagrange", 1, (mesh_dim,)))
         f_vertex = dlx.fem.Function(V)
         f_vertex.interpolate(f)
@@ -135,8 +136,8 @@ def multi1_plot(objs, titles, same_colorbar=True, show_axis="off", logscale=Fals
         vmax = -1e30
         for f in objs:
             if isinstance(f, dlx.fem.Function):
-                fmin = f.vector().min()
-                fmax = f.vector().max()
+                fmin = f.x.array.min()
+                fmax = f.x.array.max()
                 if fmin < vmin:
                     vmin = fmin
                 if fmax > vmax:
@@ -158,7 +159,7 @@ def multi1_plot(objs, titles, same_colorbar=True, show_axis="off", logscale=Fals
     for i in range(nobj):
         try:
             cmapi = cmap[i]
-        except IndexError:
+        except (TypeError, IndexError):
             cmapi = cmap
 
         plot(

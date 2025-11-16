@@ -239,7 +239,7 @@ class SqrtPrecisionPDE_Prior:
         # It is *not* a literal matrix square root of self.M.
         # It's a projection from a discontinuous quadrature space (Qh) to Vh.
 
-        qdegree = 2 * Vh._ufl_element.degree
+        qdegree = 2 * max(Vh._ufl_element.degree, 1)  # Quadrature degree
         metadata = {"quadrature_degree": qdegree}
 
         num_sub_spaces = Vh.num_sub_spaces
@@ -254,7 +254,7 @@ class SqrtPrecisionPDE_Prior:
             element = basix.ufl.element(
                 "Lagrange",
                 Vh.mesh.topology.cell_name(),
-                degree=qdegree,
+                degree=qdegree - 1,  # Use degree-1 for stability. Got some nan issues otherwise.
                 shape=(num_sub_spaces,),
             )
 
@@ -339,10 +339,10 @@ class SqrtPrecisionPDE_Prior:
         """
         if dim == "noise":
             # Vector compatible with the noise space Qh
-            return dlx.la.vector(self.Qh.dofmap.index_map)
+            return dlx.la.vector(self.Qh.dofmap.index_map, bs=self.Qh.dofmap.bs)
         else:
             # Vector compatible with the parameter space Vh
-            return dlx.la.vector(self.Vh.dofmap.index_map)
+            return dlx.la.vector(self.Vh.dofmap.index_map, bs=self.Vh.dofmap.bs)
 
     def sample(self, noise: dlx.la.Vector, s: dlx.la.Vector, add_mean=True) -> None:
         """
@@ -362,7 +362,7 @@ class SqrtPrecisionPDE_Prior:
         self.sqrtM.mult(noise.petsc_vec, rhs)
 
         # Step 2: s = A^{-1} * rhs (solve the "stiffness" system)
-        self.Asolver.solve(rhs, s.petsc_vec)
+        self.Asolver.solve(s.petsc_vec, rhs)
 
         # Step 3: Add the mean if requested
         if add_mean:
