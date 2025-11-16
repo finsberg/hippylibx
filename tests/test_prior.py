@@ -1,8 +1,9 @@
 from mpi4py import MPI
-import dolfinx
-import hippylibX as hpx
 
+import dolfinx
 import pytest
+
+import hippylibX as hpx
 
 
 @pytest.mark.parametrize("family, degree", [("Lagrange", 1), ("Lagrange", 2), ("DG", 0), ("DG", 1)])
