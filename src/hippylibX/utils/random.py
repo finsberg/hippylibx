@@ -51,8 +51,9 @@ class Random:
         loc_random_numbers = np.random.default_rng(self.rng).normal(
             loc=0,
             scale=sigma,
-            size=num_local_values,
+            size=num_local_values * out.block_size,
         )
+
         out.array[:] += loc_random_numbers
         out.scatter_forward()
 
