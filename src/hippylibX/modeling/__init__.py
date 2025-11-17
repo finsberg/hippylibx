@@ -6,7 +6,7 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 # --------------------------------------------------------------------------ec-
-
+from .expression import AnisTensor2D, Mollifier
 from .laplaceApproximation import (
     LaplaceApproximator,
     LowRankHessian,
@@ -22,6 +22,8 @@ from .Regularization import H1TikhonvFunctional, VariationalRegularization
 from .variables import ADJOINT, NVAR, PARAMETER, STATE
 
 __all__ = [
+    "AnisTensor2D",
+    "Mollifier",
     "PDEVariationalProblem",
     "NonGaussianContinuousMisfit",
     "BiLaplacianPrior",
@@ -37,4 +39,6 @@ __all__ = [
     "LowRankHessian",
     "LowRankPosteriorSampler",
     "LaplaceApproximator",
+    "AnisTensor2D",
+    "Mollifier",
 ]
