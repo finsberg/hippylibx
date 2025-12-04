@@ -65,16 +65,17 @@ def _mplot_function(f, vmin, vmax, logscale):
     # Vector function, interpolated to vertices
     elif f.x.block_size == 2:
         V = dlx.fem.functionspace(mesh, ("Lagrange", 1, (mesh_dim,)))
+        coords = V.tabulate_dof_coordinates()
         f_vertex = dlx.fem.Function(V)
         f_vertex.interpolate(f)
         w0 = f_vertex.x.array[:]
         num_vertices = mesh.topology.index_map(0).size_local
         if len(w0) != 2 * num_vertices:
             raise AttributeError("Vector field must be 2D")
-        X = mesh.geometry.x[:, 0]
-        Y = mesh.geometry.x[:, 1]
-        U = w0[:num_vertices]
-        V = w0[num_vertices:]
+        X = coords[:, 0]
+        Y = coords[:, 1]
+        U = w0[::2]
+        V = w0[1::2]
         C = np.sqrt(U * U + V * V)
         return plt.quiver(X, Y, U, V, C, units="x", headaxislength=7, headwidth=7, headlength=7, scale=4, pivot="middle")
 
@@ -88,6 +89,7 @@ def plot(
     vmin=None,
     vmax=None,
     logscale=False,
+    aspect=None,
     cmap=None,
     fontsize=20,
 ):
@@ -113,8 +115,9 @@ def plot(
 
     if colorbar:
         plt.colorbar(pp, fraction=0.1, pad=0.2)
-    else:
-        plt.gca().set_aspect("equal")
+
+    if aspect is not None:
+        plt.gca().set_aspect(aspect)
 
     if mytitle is not None:
         plt.title(mytitle, fontsize=fontsize)
@@ -346,7 +349,7 @@ def plot_eigenvectors(Vh, U, mytitle, which=[0, 1, 2, 5, 10, 15], cmap=None):
 
     title_stamp = mytitle + " {0}"
     u = dlx.fem.Function(Vh)
-    # breakpoint()
+
     counter = 1
     for i in which:
         assert i < U.nvec
