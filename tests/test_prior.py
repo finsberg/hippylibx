@@ -1,5 +1,5 @@
 from mpi4py import MPI
-
+import numpy as np
 import dolfinx
 import pytest
 
@@ -21,7 +21,10 @@ def test_prior_sample(family, degree, shape):
     hpx.parRandom.normal(1.0, noise)
 
     sample = dolfinx.fem.Function(prior.Vh, name="prior_sample")
+
+    assert np.allclose(sample.x.array, 0.0)
     prior.sample(noise, sample.x)
+    assert not np.allclose(sample.x.array, 0.0)
 
     # Check that the sample has the correct shape
     if shape == ():

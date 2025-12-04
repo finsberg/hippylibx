@@ -362,7 +362,7 @@ class SqrtPrecisionPDE_Prior:
         self.sqrtM.mult(noise.petsc_vec, rhs)
 
         # Step 2: s = A^{-1} * rhs (solve the "stiffness" system)
-        self.Asolver.solve(s.petsc_vec, rhs)
+        self.Asolver.solve(rhs, s.petsc_vec)
 
         # Step 3: Add the mean if requested
         if add_mean:
